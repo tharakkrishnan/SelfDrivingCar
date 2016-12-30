@@ -1,0 +1,9 @@
+name: CarND-TrafficSigns-P2
+dependencies:
+- pip >= 9
+- jupyter
+- scikit-learn
+- numpy
+- matplotlib
+- pip:
+  - tensorflow >= 0.12.0rc1
