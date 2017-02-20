@@ -365,10 +365,14 @@ def warp_onto_original(undist, warped, Minv, ploty, left_fit, right_fit, fname='
        
     pts_left = np.array([np.transpose(np.vstack([left_fitx, ploty]))])
     pts_right = np.array([np.flipud(np.transpose(np.vstack([right_fitx, ploty])))])
+
     pts = np.hstack((pts_left, pts_right))
 
     # Draw the lane onto the warped blank image
     cv2.fillPoly(color_warp, np.int_([pts]), (0,255, 0))
+    cv2.polylines(color_warp, np.int32([pts_left]), False, (0,0,255), thickness=20)
+    cv2.polylines(color_warp, np.int32([pts_right]), False, (0,0,255), thickness=20)
+
 
     # Warp the blank back to original image space using inverse perspective matrix (Minv)
     newwarp = cv2.warpPerspective(color_warp, Minv, (undist.shape[1], undist.shape[0])) 
@@ -392,7 +396,7 @@ def test_image_pipeline(warp_matrices, region_of_interest_vertices, save_images)
         warped = apply_perspective_transform(masked_binary, warp_matrices[0], fname=fname, save_images=save_images)
         ploty, left_curverad, right_curverad, left_fit, right_fit = detect_lanes_from_scratch(warped, fname=fname, save_images=save_images)
         print(left_curverad, 'm', right_curverad, 'm')
-        warp_onto_original(undist, warped, warp_matrices[1], ploty, left_fitx, right_fitx, fname=fname, save_images=save_images)
+        warp_onto_original(undist, warped, warp_matrices[1], ploty, left_fit, right_fit, fname=fname, save_images=save_images)
 
 # Define a class to receive the characteristics of each line detection
 class Line():
@@ -438,11 +442,12 @@ def process_frame(image):
 
     
 if __name__=="__main__":
-    save_images=0
+    save_images=1
     objpoints, imgpoints = compute_camera_calibration_matrix(save_images=save_images)
     warp_matrix, inv_warp_matrix = get_warp_matrix(cv2.imread("test_images/straight_lines2.jpg"), save_images=save_images)
     region_of_interest_vertices = np.array([[(120,720), (600,420), (680, 420), (1200,720)]], dtype=np.int32)
-    #test_image_pipeline((warp_matrix, inv_warp_matrix), region_of_interest_vertices, save_images)
+    test_image_pipeline((warp_matrix, inv_warp_matrix), region_of_interest_vertices, save_images)
+    exit()
     frm_cnt=0
     prev_left_fit = None
     prev_right_fit = None
