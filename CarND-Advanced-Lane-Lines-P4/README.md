@@ -140,7 +140,6 @@ Link: https://youtu.be/c1DePa331do
 
 ###Discussion
 
-####1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
 
 I would improve the video pipeline by maintaining a running average of the lane lines from about 10 previous frames rather than just the single previous frame. This will allow us to draw sommother lane lines in
 regions where its noisy like in the shadows etc.  
