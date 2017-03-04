@@ -24,15 +24,16 @@ The goals / steps of this project are the following:
 [image4b]: ./output_images/perspective_warped.jpg "Warp Example"
 [image5]: ./output_images/warped_test1.jpg "Bird's eye-view"
 [image6]: ./output_images/detect_lane_test1.jpg "lane detected"
-[video1]: ./project_video.mp4 "Video"
+[image7]: ./output_images/final_test1.jpg "final image"
+[video1]: ./output.mp4 "Video"
 
 
 ### Camera Calibration
 
 #### 1. Compute the camera matrix and distortion coefficients
 
-The code for this step is contained in the first code cell of the IPython notebook located in "./pipline.ipynb" in the functions
-_compute\_camera\_calibration\_matrix(save_images=save_images)_ and _undistort\_camera\_image(objpoints, imgpoints, image, fname=fname, save\_images=save\_images)_
+The code for this step is contained in the first code cell of the IPython notebook located in "./pipline.py" in the functions
+(line 14) _compute\_camera\_calibration\_matrix(save_images=save_images)_ and (line 46) _undistort\_camera\_image(objpoints, imgpoints, image, fname=fname, save\_images=save\_images)_
 
 I start by preparing "object points", which will be the (x, y, z) coordinates of the chessboard corners in the world. Here I am assuming the chessboard is fixed on the (x, y) plane at z=0, such that the object points are the same for each calibration image.  Thus, `objp` is just a replicated array of coordinates, and `objpoints` will be appended with a copy of it every time I successfully detect all chessboard corners in a test image.  `imgpoints` will be appended with the (x, y) pixel position of each of the corners in the image plane with each successful chessboard detection.  
 
@@ -54,14 +55,14 @@ Figure 2b: Undistorted Test image
 ![alt text][image2b]
 
 #### 3a. Use color transforms, gradients or other methods to create a thresholded binary image
-I used a combination of color and gradient thresholds to generate a binary image (thresholding steps in function: _generate\_threshold\_binary\_image(undist, s\_thresh=(170, 255), sx\_thresh=(20, 100), fname=fname, save\_images=save\_images)_ in _pipeline.ipynb_).  Here's an example of my output for this step.  (note: this is not actually for the original test image in Figure 2a.)
+I used a combination of color and gradient thresholds to generate a binary image (thresholding steps in function: (line 93) _generate\_threshold\_binary\_image(undist, s\_thresh=(170, 255), sx\_thresh=(20, 100), fname=fname, save\_images=save\_images)_ in _pipeline.ipynb_).  Here's an example of my output for this step.  (note: this is not actually for the original test image in Figure 2a.)
 In particular, I transformed the image into the HSV space and used only the S parameter. I then run a Sobel gradient in the x direction to capture vertical artifacts like lanes. I combine both the S and Sx parameters to obtain the combined binary.
 
 Figure 3a: Combined binary image
 ![alt text][image3a]
 
 #### 3b. Generate a region of interest (ROI) mask and mask out unimportant artifacts
-I genereated a ROI mask (mask generation in function _region\_of\_interest(cmb,region\_of\_interest\_vertices, fname=fname, save\_images=save\_images))using the following points:
+I genereated a ROI mask (mask generation in function (line 60) _region\_of\_interest(cmb,region\_of\_interest\_vertices, fname=fname, save\_images=save\_images))using the following points:
 | ROI points    |
 |:-------------:| 
 | 585, 460      | 
@@ -77,7 +78,7 @@ Figure 3b: Masked Combined binary image
 
 #### 4. Generate Perspective transform and Inverse transform matrices based on an image with straight lanes
 
-The code for my perspective transform is included in a function called _get\_warp\_matrix(image, src, dst, save\_images=save\_images)_, which appears in the file `pipeline.ipynb` (`output_images/perspective_original.jpg` and `output_images/perspective_warped.jpg`)  The function takes as inputs an image (`img`), as well as source (`src`) and destination (`dst`) points.  
+The code for my perspective transform is included in a function called (line 133) _get\_warp\_matrix(image, src, dst, save\_images=save\_images)_, which appears in the file `pipeline.py` (`output_images/perspective_original.jpg` and `output_images/perspective_warped.jpg`)  The function takes as inputs an image (`img`), as well as source (`src`) and destination (`dst`) points.  
 I chose the hardcode the source and destination points in the following manner:
 
 | Source        | Destination   | 
@@ -96,7 +97,7 @@ Figure 4b: Bird's eye-view Warped Perspective
 ![alt text][image4b]
 
 #### 5. Apply the perpective transform on the combined binary image to obtain the bird's eyeview perspective
-I applied the perpective transform using the function _apply\_perspective\_transform(img, warp\_matrix, fname='', save\_images=0)_.
+I applied the perpective transform using the function (line 154) _apply\_perspective\_transform(img, warp\_matrix, fname='', save\_images=0)_.
 
 Figure 5: Bird's Eye view perspective of the masked combined binary image
 ![alt text][image5]
@@ -106,28 +107,33 @@ I identified the lane lines using a brute-force windowing technique. Initially, 
 may repersent lanes. Using the histogram peaks to center my inital 100 pixel width window I search for the center of the lane pixels. The window height is about 72 pixels requiring
 me to search using sliding windws along 10 horizontal  strips covering the image from top to bottom. 
 
-The code is in the function _detect\_lanes\_from\_scratch(binary\_warped, fname='', save\_images=0)_ 
+The code is in the function (line 164) _detect\_lanes\_from\_scratch(binary\_warped, fname='', save\_images=0)_ 
 
 Figure 6: Lanes detected on warped binary image
 ![alt text][image6]
 
 #### 5. Calculated the radius of curvature of the lane and the position of the vehicle with respect to center.
 
-I did this in lines # through # in my code in `my_other_file.py`
+Implemented in the function (line 347) _determine\_curvature (ploty, leftx, lefty, rightx, righty, road\_width, deviation)_
+Thee road-width is calculated as the distance between the intercepts of the left adn right lanes on the last row of image. Using the roadwith we calculate the deviation from the center.
+Convert all measures to meters and calculate the radii of curvature of both lanes in meters.
 
-#### 6. Provide an example image of your result plotted back down onto the road such that the lane area is identified clearly.
+#### 6. Result plotted back down onto the road such that the lane area is identified clearly.
 
-I implemented this step in lines # through # in my code in `yet_another_file.py` in the function `map_lane()`.  Here is an example of my result on a test image:
-
-![alt text][image6]
+Once the lane has been identified, we take the waped lane and transform back into the perspective view and add it onto the undistorted image.
+This is performed in function (line 365) _warp\_onto\_original(undist, warped, Minv, ploty, left\_fit, right\_fit, fname='', save\_images=0)_
+![alt text][image7]
 
 ---
 
 ### Pipeline (video)
 
-####1. Provide a link to your final video output.  Your pipeline should perform reasonably well on the entire project video (wobbly lines are ok but no catastrophic failures that would cause the car to drive off the road!).
+The pipeline implemented for the project video. In order to speed up the process, rather than search for the lanes from scratch in each frame, we use the lane lines from the previous frames as a reference and search for the 
+new lane lines within a narrow window around these reference lanes. Implemented in (line 261) _detect\_lanes\_using\_previous\_lane\_values(binary\_warped, est\_left\_fit, est\_right\_fit, fname='', save\_images=0)_
 
-Here's a [link to my video result](./project_video.mp4)
+Link: https://youtu.be/c1DePa331do
+
+![alt text][video1]
 
 ---
 
@@ -135,5 +141,5 @@ Here's a [link to my video result](./project_video.mp4)
 
 ####1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
 
-Here I'll talk about the approach I took, what techniques I used, what worked and why, where the pipeline might fail and how I might improve it if I were going to pursue this project further.  
-
+I would improve the video pipeline by maintaining a running average of the lane lines from about 10 previous frames rather than just the single previous frame. This will allow us to draw sommother lane lines in
+regions where its noisy like in the shadows etc.  

@@ -53,7 +53,7 @@ def undistort_camera_image(objpoints, imgpoints, img, fname='', save_images=0):
     dst = cv2.undistort(img, mtx, dist, None, mtx)
     if save_images:
         write_name = 'output_images/undist_'+fname
-        cv2.imwrite(write_name, img)
+        cv2.imwrite(write_name, dst)
 
     return dst
 
@@ -82,8 +82,15 @@ def region_of_interest(img, vertices, fname='', save_images=0):
         plt.imsave("output_images/masked_cmb_{}".format(fname.split("/")[-1]), masked_image)
     return masked_image
 
+def noise_reduction(image, threshold=4):
+    k = np.array([[1, 1, 1],
+                  [1, 0, 1],
+                  [1, 1, 1]])
+    nb_neighbours = cv2.filter2D(image, ddepth=-1, kernel=k)
+    image[nb_neighbours < threshold] = 0
+    return image
 
-def generate_threshold_binary_image(img, s_thresh=(170, 255), sx_thresh=(20, 100), fname='', save_images=0): 
+def generate_threshold_binary_image(img, s_thresh=(170, 255), sx_thresh=(20, 100), l_thresh = (30, 255), fname='', save_images=0): 
     '''Use color transforms, gradients, etc., to create a thresholded binary image.
     '''
     img = np.copy(img)
@@ -101,14 +108,18 @@ def generate_threshold_binary_image(img, s_thresh=(170, 255), sx_thresh=(20, 100
     # Threshold color channel
     s_binary = np.zeros_like(s_channel)
     s_binary[(s_channel >= s_thresh[0]) & (s_channel <= s_thresh[1])] = 1
+
+    l_binary = np.zeros_like(l_channel)
+    l_binary[(l_channel >= l_thresh[0]) & (l_channel <= l_thresh[1])] = 1
     # Stack each channel
     # Note color_binary[:, :, 0] is all 0s, effectively an all black image. It might
     # be beneficial to replace this channel with something else.
-    color_binary = np.dstack(( np.zeros_like(sxbinary), sxbinary, s_binary))
+    color_binary = np.dstack((l_binary, sxbinary, s_binary))
  
     # Combine the two binary thresholds
     combined_binary = np.zeros_like(sxbinary)
-    combined_binary[(s_binary == 1) | (sxbinary == 1)] = 1
+    combined_binary[(l_binary == 1) & (s_binary == 1) | (sxbinary == 1) ] = 1
+    noise_reduction(combined_binary)
     
     if save_images:
         cv2.imwrite("output_images/cb_{}".format(fname.split("/")[-1]), color_binary*255)
@@ -119,21 +130,9 @@ def generate_threshold_binary_image(img, s_thresh=(170, 255), sx_thresh=(20, 100
 
     return (color_binary, combined_binary, s_binary, sxbinary)
 
-def get_warp_matrix(img, save_images=0):
+def get_warp_matrix(img, src, dst, save_images=0):
     
     img_size = (img.shape[1], img.shape[0])
-
-    src = np.float32(
-    [[(img_size[0] / 2) - 55, img_size[1] / 2 + 100],
-    [((img_size[0] / 6) - 10), img_size[1]],
-    [(img_size[0] * 5 / 6) + 60, img_size[1]],
-    [(img_size[0] / 2 + 55), img_size[1] / 2 + 100]])
-
-    dst = np.float32(
-    [[(img_size[0] / 4), 0],
-    [(img_size[0] / 4), img_size[1]],
-    [(img_size[0] * 3 / 4), img_size[1]],
-    [(img_size[0] * 3 / 4), 0]])
 
     #Compute perspective warp matrix
     M = cv2.getPerspectiveTransform(src, dst)
@@ -176,7 +175,7 @@ def detect_lanes_from_scratch(binary_warped, fname='', save_images=0):
     rightx_base = np.argmax(histogram[midpoint:]) + midpoint
 
     # Choose the number of sliding windows
-    nwindows = 10
+    nwindows = 20
     # Set height of windows
     window_height = np.int(binary_warped.shape[0]/nwindows)
     # Identify the x and y positions of all nonzero pixels in the image
@@ -187,7 +186,7 @@ def detect_lanes_from_scratch(binary_warped, fname='', save_images=0):
     leftx_current = leftx_base
     rightx_current = rightx_base
     # Set the width of the windows +/- margin
-    margin = 100
+    margin = 60
     # Set minimum number of pixels found to recenter window
     minpix = 50
     # Create empty lists to receive left and right lane pixel indices
@@ -238,9 +237,13 @@ def detect_lanes_from_scratch(binary_warped, fname='', save_images=0):
     left_fitx = left_fit[0]*ploty**2 + left_fit[1]*ploty + left_fit[2]
     right_fitx = right_fit[0]*ploty**2 + right_fit[1]*ploty + right_fit[2]
     
-    #determine curvature
-    left_curverad, right_curverad=determine_curvature (ploty, leftx, lefty, rightx, righty)
+    right_intercept = right_fit[0]*binary_warped.shape[0]**2 + right_fit[1]*binary_warped.shape[0] + right_fit[2]
+    left_intercept = left_fit[0]*binary_warped.shape[0]**2 + left_fit[1]*binary_warped.shape[0] + left_fit[2]
+    road_width = right_intercept-left_intercept
+    deviation_from_center = road_width - binary_warped.shape[1]/2.0
     
+    left_curverad, right_curverad, deviation = determine_curvature (ploty, leftx, lefty, rightx, righty, road_width, deviation_from_center)
+   
     if save_images:
         out_img[nonzeroy[left_lane_inds], nonzerox[left_lane_inds]] = [255, 0, 0]
         out_img[nonzeroy[right_lane_inds], nonzerox[right_lane_inds]] = [0, 255, 0]
@@ -249,8 +252,11 @@ def detect_lanes_from_scratch(binary_warped, fname='', save_images=0):
         plt.xlim(0, 1280)
         plt.ylim(720, 0)
         plt.imshow(out_img)
-        cv2.imwrite("output_images/detect_lane_{}".format(fname.split("/")[-1]), out_img)
-    return (ploty, left_curverad, right_curverad, left_fit, right_fit)
+        write_image="output_images/detect_lane_{}".format(fname.split("/")[-1])
+        plt.imsave(write_image, out_img)
+        plt.savefig("{}.png".format(write_image.split(".")[0]), bbox_inches='tight')
+        plt.cla()  
+    return (ploty, left_curverad, right_curverad, deviation, left_fit, right_fit)
 
 def detect_lanes_using_previous_lane_values(binary_warped, est_left_fit, est_right_fit, fname='', save_images=0):
     # Assume you now have a new warped binary image 
@@ -300,10 +306,13 @@ def detect_lanes_using_previous_lane_values(binary_warped, est_left_fit, est_rig
     ploty = np.linspace(0, binary_warped.shape[0]-1, binary_warped.shape[0] )
     left_fitx = left_fit[0]*ploty**2 + left_fit[1]*ploty + left_fit[2]
     right_fitx = right_fit[0]*ploty**2 + right_fit[1]*ploty + right_fit[2]
+    
+    right_intercept = right_fit[0]*binary_warped.shape[0]**2 + right_fit[1]*binary_warped.shape[0] + right_fit[2]
+    left_intercept = left_fit[0]*binary_warped.shape[0]**2 + left_fit[1]*binary_warped.shape[0] + left_fit[2]
+    road_width = right_intercept-left_intercept
+    deviation_from_center = road_width - binary_warped.shape[1]/2.0
 
-    
-    
-    left_curverad, right_curverad=determine_curvature (ploty, leftx, lefty, rightx, righty)
+    left_curverad, right_curverad, deviation = determine_curvature (ploty, leftx, lefty, rightx, righty, road_width, deviation_from_center)
 
     if save_images:
         # Create an image to draw on and an image to show the selection window
@@ -331,17 +340,17 @@ def detect_lanes_using_previous_lane_values(binary_warped, est_left_fit, est_rig
         plt.xlim(0, 1280)
         plt.ylim(720, 0)
         cv2.imwrite("output_images/detect_lane_{}".format(fname.split("/")[-1]), out_img)
-    return (ploty, left_curverad, right_curverad, left_fit, right_fit)
+    return (ploty, left_curverad, right_curverad, deviation, left_fit, right_fit)
 
 
 #Determine the curvature of the lane and vehicle position with respect to center.
-def determine_curvature (ploty, leftx, lefty, rightx, righty):
+def determine_curvature (ploty, leftx, lefty, rightx, righty, road_width, deviation):
     # Define y-value where we want radius of curvature
     # I'll choose the maximum y-value, corresponding to the bottom of the image
     y_eval = np.max(ploty)
     # Define conversions in x and y from pixels space to meters
-    ym_per_pix = 30/720 # meters per pixel in y dimension
-    xm_per_pix = 3.7/700 # meters per pixel in x dimension
+    ym_per_pix = 30/road_width # meters per pixel in y dimension
+    xm_per_pix = 3.7/road_width # meters per pixel in x dimension
 
     # Fit new polynomials to x,y in world space
     left_fit_cr = np.polyfit(lefty*ym_per_pix, leftx*xm_per_pix, 2)
@@ -350,7 +359,8 @@ def determine_curvature (ploty, leftx, lefty, rightx, righty):
     left_curverad = ((1 + (2*left_fit_cr[0]*y_eval*ym_per_pix + left_fit_cr[1])**2)**1.5) / np.absolute(2*left_fit_cr[0])
     right_curverad = ((1 + (2*right_fit_cr[0]*y_eval*ym_per_pix + right_fit_cr[1])**2)**1.5) / np.absolute(2*right_fit_cr[0])
     # Now our radius of curvature is in meters
-    return (left_curverad, right_curverad)
+    deviation_in_mtrs = deviation*xm_per_pix
+    return (left_curverad, right_curverad, deviation_in_mtrs)
 
 #Warp the detected lane boundaries back onto the original image.
 def warp_onto_original(undist, warped, Minv, ploty, left_fit, right_fit, fname='', save_images=0):
@@ -378,8 +388,6 @@ def warp_onto_original(undist, warped, Minv, ploty, left_fit, right_fit, fname='
     newwarp = cv2.warpPerspective(color_warp, Minv, (undist.shape[1], undist.shape[0])) 
     # Combine the result with the original image
     result = cv2.addWeighted(undist, 1, newwarp, 0.3, 0)
-    if save_images:
-        cv2.imwrite("output_images/final_{}".format(fname.split("/")[-1]), result)
     return result
 #Output visual display of the lane boundaries and numerical estimation of lane curvature and vehicle position.
 
@@ -393,67 +401,69 @@ def test_image_pipeline(warp_matrices, region_of_interest_vertices, save_images)
         undist = undistort_camera_image(objpoints, imgpoints, img, fname=fname, save_images=save_images)
         cb, cmb, sb, sxb = generate_threshold_binary_image(undist, s_thresh=(170, 255), sx_thresh=(20, 100), fname=fname, save_images=save_images)
         masked_binary = region_of_interest(cmb,region_of_interest_vertices, fname=fname, save_images=save_images)
-        warped = apply_perspective_transform(masked_binary, warp_matrices[0], fname=fname, save_images=save_images)
-        ploty, left_curverad, right_curverad, left_fit, right_fit = detect_lanes_from_scratch(warped, fname=fname, save_images=save_images)
-        print(left_curverad, 'm', right_curverad, 'm')
-        warp_onto_original(undist, warped, warp_matrices[1], ploty, left_fit, right_fit, fname=fname, save_images=save_images)
+        binary_warped = apply_perspective_transform(masked_binary, warp_matrices[0], fname=fname, save_images=save_images)
+        ploty, left_curverad, right_curverad, deviation, left_fit, right_fit = detect_lanes_from_scratch(binary_warped, fname=fname, save_images=save_images)
+        result = warp_onto_original(undist, binary_warped, warp_matrices[1], ploty, left_fit, right_fit, fname=fname, save_images=save_images)
+        result = print_curvature_deviation(result, left_curverad, right_curverad, deviation)
+        if save_images:
+            cv2.imwrite("output_images/final_{}".format(fname.split("/")[-1]), result)
 
-# Define a class to receive the characteristics of each line detection
-class Line():
-    def __init__(self):
-        # was the line detected in the last iteration?
-        self.detected = False  
-        # x values of the last n fits of the line
-        self.recent_xfitted = [] 
-        #average x values of the fitted line over the last n iterations
-        self.bestx = None     
-        #polynomial coefficients averaged over the last n iterations
-        self.best_fit = None  
-        #polynomial coefficients for the most recent fit
-        self.current_fit = [np.array([False])]  
-        #radius of curvature of the line in some units
-        self.radius_of_curvature = None 
-        #distance in meters of vehicle center from the line
-        self.line_base_pos = None 
-        #difference in fit coefficients between last and new fits
-        self.diffs = np.array([0,0,0], dtype='float') 
-        #x values for detected line pixels
-        self.allx = None  
-        #y values for detected line pixels
-        self.ally = None
-
-
+def print_curvature_deviation(img, left_curverad, right_curverad, deviation):
+    curvature_text = 'Left Curvature: {:.2f} m    Right Curvature: {:.2f} m'.format(left_curverad, right_curverad)
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    cv2.putText(img, curvature_text, (100, 50), font, 1, (221, 28, 119), 2)
+    deviation_info = 'Lane Deviation: {:.3f} m'.format(deviation)
+    cv2.putText(img, deviation_info, (100, 90), font, 1, (221, 28, 119), 2)
+    return img
 
 def process_frame(image):
     global save_images, frm_cnt, objpoints, imgpoints, warp_matrix, inv_warp_matrix, region_of_interest_vertices, \
            prev_left_fit, prev_right_fit
     frm_cnt += 1
     fname = "output_images/frame_{}.jpg".format(frm_cnt)
+    if save_images:
+            plt.imsave(fname, image)
     undist = undistort_camera_image(objpoints, imgpoints, image, fname=fname, save_images=save_images)
     cb, cmb, sb, sxb = generate_threshold_binary_image(undist, s_thresh=(170, 255), sx_thresh=(20, 100), fname=fname, save_images=save_images)
     masked_binary = region_of_interest(cmb,region_of_interest_vertices, fname=fname, save_images=save_images)
     binary_warped = apply_perspective_transform(masked_binary, warp_matrix, fname=fname, save_images=save_images)
-    ploty, left_curverad, right_curverad, left_fit, right_fit = detect_lanes_using_previous_lane_values(binary_warped, prev_left_fit, prev_right_fit, fname='', save_images=0)
+    ploty, left_curverad, right_curverad, deviation, left_fit, right_fit = detect_lanes_using_previous_lane_values(binary_warped, prev_left_fit, prev_right_fit, fname='', save_images=0)
     prev_left_fit, prev_right_fit = left_fit, right_fit
 
-    #print(left_curverad, 'm', right_curverad, 'm')
-    result=warp_onto_original(undist, binary_warped, inv_warp_matrix, ploty, left_fit, right_fit, fname=fname, save_images=save_images)
-    return result
+    final=warp_onto_original(undist, binary_warped, inv_warp_matrix, ploty, left_fit, right_fit, fname=fname, save_images=save_images)
+    final=print_curvature_deviation(final, left_curverad, right_curverad, deviation)
+
+    return final
 
     
 if __name__=="__main__":
     save_images=1
+
+    src = np.float32(
+    [[585, 460],
+    [203,720],
+    [1127,720],
+    [695,460]])
+
+    dst = np.float32(
+    [[320, 0],
+    [320, 720],
+    [960, 720],
+    [960, 0]])
+
     objpoints, imgpoints = compute_camera_calibration_matrix(save_images=save_images)
-    warp_matrix, inv_warp_matrix = get_warp_matrix(cv2.imread("test_images/straight_lines2.jpg"), save_images=save_images)
+
+    warp_matrix, inv_warp_matrix = get_warp_matrix(cv2.imread("test_images/straight_lines2.jpg"), src, dst, save_images=save_images)
     region_of_interest_vertices = np.array([[(120,720), (600,420), (680, 420), (1200,720)]], dtype=np.int32)
     test_image_pipeline((warp_matrix, inv_warp_matrix), region_of_interest_vertices, save_images)
-    exit()
+
     frm_cnt=0
+    save_images=0
     prev_left_fit = None
     prev_right_fit = None
     clip1 = VideoFileClip("project_video.mp4")
     clip = clip1.fl_image(process_frame) #NOTE: this function expects color images!!
-    clip.write_videofile("output.mp4", audio=False)
+    clip.write_videofile("output_images/output.mp4", audio=False)
     
     
     
