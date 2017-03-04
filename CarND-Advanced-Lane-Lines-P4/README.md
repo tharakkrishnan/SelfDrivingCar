@@ -55,8 +55,9 @@ Figure 2b: Undistorted Test image
 ![alt text][image2b]
 
 #### 3a. Use color transforms, gradients or other methods to create a thresholded binary image
-I used a combination of color and gradient thresholds to generate a binary image (thresholding steps in function: (line 93) _generate\_threshold\_binary\_image(undist, s\_thresh=(170, 255), sx\_thresh=(20, 100), fname=fname, save\_images=save\_images)_ in _pipeline.ipynb_).  Here's an example of my output for this step.  (note: this is not actually for the original test image in Figure 2a.)
-In particular, I transformed the image into the HSV space and used only the S parameter. I then run a Sobel gradient in the x direction to capture vertical artifacts like lanes. I combine both the S and Sx parameters to obtain the combined binary.
+I used a combination of color and gradient thresholds to generate a binary image (thresholding steps in function: (line 93) _generate\_threshold\_binary\_image(undist, s\_thresh=(170, 255), sx\_thresh=(20, 100), l\_thresh=(30, 255)fname=fname, save\_images=save\_images)_ in _pipeline.py_).  
+In particular, I transformed the image into the HSV space and used only the S and the L parameter. I then run a Sobel gradient in the x direction to capture vertical artifacts like lanes on th S parameter. I combine both the L, S and Sx parameters to obtain the combined binary. In order to 
+remove some small noisy artefacts caused by the potholes on the road I apply a smoothing filter to it.
 
 Figure 3a: Combined binary image
 ![alt text][image3a]
