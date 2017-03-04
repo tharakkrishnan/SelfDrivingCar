@@ -63,7 +63,8 @@ Figure 3a: Combined binary image
 ![alt text][image3a]
 
 #### 3b. Generate a region of interest (ROI) mask and mask out unimportant artifacts
-I genereated a ROI mask (mask generation in function (line 60) _region\_of\_interest(cmb,region\_of\_interest\_vertices, fname=fname, save\_images=save\_images))using the following points:
+I genereated a ROI mask (mask generation in function (line 60) _region\_of\_interest(cmb,region\_of\_interest\_vertices, fname=fname, save\_images=save\_images) using the following points:
+
 | ROI points    |
 |:-------------:| 
 | 585, 460      | 
@@ -105,8 +106,8 @@ Figure 5: Bird's Eye view perspective of the masked combined binary image
 
 #### 6. Identified lane-line pixels and fitted their positions with a polynomial
 I identified the lane lines using a brute-force windowing technique. Initially, I take a histogram of the lower half of the combined binary image to identify peaks that 
-may repersent lanes. Using the histogram peaks to center my inital 100 pixel width window I search for the center of the lane pixels. The window height is about 72 pixels requiring
-me to search using sliding windws along 10 horizontal  strips covering the image from top to bottom. 
+may repersent lanes. Using the histogram peaks to center my inital 100 pixel width window I search for the center of the lane pixels. The window height is about 36 pixels requiring
+me to search using sliding windws along 20 horizontal  strips covering the image from top to bottom. Each window has a margin 60 pixels wide within which we search for lane markings.
 
 The code is in the function (line 164) _detect\_lanes\_from\_scratch(binary\_warped, fname='', save\_images=0)_ 
 
