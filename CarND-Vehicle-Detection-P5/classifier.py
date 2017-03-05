@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 import cv2
 import glob
 import time
@@ -80,4 +82,3 @@ dist_pickle["cell_per_block"] = cell_per_block
 dist_pickle["spatial_size"] = spatial_size
 dist_pickle["hist_bins"] = hist_bins
 pickle.dump( dist_pickle, open("svc_pickle.p", "wb" ))
-

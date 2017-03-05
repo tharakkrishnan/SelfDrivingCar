@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 import numpy as np
@@ -14,6 +16,9 @@ from moviepy.editor import VideoFileClip
 
 from features import convert_color, get_hog_features, bin_spatial, color_hist
 from heat_map import add_heat, draw_labeled_bboxes, apply_threshold 
+
+POSITIVE_DETECTION_THRESHOLD = 20
+FRAMES_USED_FOR_POSITIVE_DETECTION=25
 
 # Define a function that takes an image,
 # start and stop positions in both x and y, 
@@ -105,7 +110,7 @@ def search_windows(img, windows, clf, scaler, color_space='RGB',
     
 
 # Define a single function that can extract features using hog sub-sampling and make predictions
-def find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size, hist_bins):
+def find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size, hist_bins, multi_frame=False, multi_frame_box_list=[], fname=""):
     
     draw_img = np.copy(img)
     img = img.astype(np.float32)/255
@@ -136,7 +141,9 @@ def find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, ce
     hog2 = get_hog_features(ch2, orient, pix_per_cell, cell_per_block, feature_vec=False)
     hog3 = get_hog_features(ch3, orient, pix_per_cell, cell_per_block, feature_vec=False)
     
-    box_list=[]
+    
+    bb_list=[]
+    copy_image = np.copy(draw_img)
 
     for xb in range(nxsteps):
         for yb in range(nysteps):
@@ -167,24 +174,53 @@ def find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, ce
                 xbox_left = np.int(xleft*scale)
                 ytop_draw = np.int(ytop*scale)
                 win_draw = np.int(window*scale)
-                #cv2.rectangle(draw_img,(xbox_left, ytop_draw+ystart),(xbox_left+win_draw,ytop_draw+win_draw+ystart),(0,0,255),6) 
-                box_list.append(((xbox_left, ytop_draw+ystart),(xbox_left+win_draw,ytop_draw+win_draw+ystart)))
+                if not multi_frame:
+                    cv2.rectangle(copy_image,(xbox_left, ytop_draw+ystart),(xbox_left+win_draw,ytop_draw+win_draw+ystart),(255,0,0),6) 
+                bb_list.append(((xbox_left, ytop_draw+ystart),(xbox_left+win_draw,ytop_draw+win_draw+ystart)))
+
+    if multi_frame:
+        if len(multi_frame_box_list) > FRAMES_USED_FOR_POSITIVE_DETECTION:
+            multi_frame_box_list.pop(0)
+        multi_frame_box_list.append(bb_list)
+        bb_list=[]
+        for l in multi_frame_box_list:
+            for b in l:
+                bb_list.append(b)
+    else:
+        plt.imshow(copy_image)
+        plt.axis("off")
+        plt.savefig("output_images/bboxes_{}.png".format(fname.split(".")[0].split("/")[-1]))
     
     heat = np.zeros_like(draw_img[:,:,0]).astype(np.float)
-    heat = add_heat(heat,box_list)    
+    heat = add_heat(heat,bb_list)    
     # Apply threshold to help remove false positives
-    heat = apply_threshold(heat,1)
+    if multi_frame:
+        heat = apply_threshold(heat,POSITIVE_DETECTION_THRESHOLD)
+    else:
+        heat = apply_threshold(heat,1)
+    
+    if not multi_frame:
+        plt.imshow(heat)
+        plt.axis("off")
+        plt.savefig("output_images/heatmap_{}.png".format(fname.split(".")[0].split("/")[-1]))
+    
+
     # Visualize the heatmap when displaying    
     heatmap = np.clip(heat, 0, 255)
     # Find final boxes from heatmap using label function
     labels = label(heatmap)
-    draw_img = draw_labeled_bboxes(np.copy(draw_img), labels)    
+    draw_img = draw_labeled_bboxes(np.copy(draw_img), labels)  
+    
+    if not multi_frame:
+        plt.imshow(draw_img)
+        plt.axis("off")
+        plt.savefig("output_images/final_{}.png".format(fname.split(".")[0].split("/")[-1]))  
+    
     return draw_img
 
 def process_frame(img):
-    global svc, X_scalar, orient, pix_per_cell, cell_per_block, spatial_size, hist_bins
-    return find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size, hist_bins)
-
+    global svc, X_scalar, orient, pix_per_cell, cell_per_block, spatial_size, hist_bins, ystart, ystop, scale, mf_box_list
+    return find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size, hist_bins, multi_frame=True, multi_frame_box_list=mf_box_list)
 
 
 dist_pickle = pickle.load( open("svc_pickle.p", "rb" ) )
@@ -195,18 +231,16 @@ pix_per_cell = dist_pickle["pix_per_cell"]
 cell_per_block = dist_pickle["cell_per_block"]
 spatial_size = dist_pickle["spatial_size"]
 hist_bins = dist_pickle["hist_bins"]
+ystart = 400
+ystop = 680
+scale = 1.5
 
 images = glob.glob('test_images/test*.jpg')    
 for image in images:
     img = mpimg.imread(image)
-    ystart = 400
-    ystop = 656
-    scale = 1.5
-    
-    out_img = find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size, hist_bins)
+    out_img = find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size, hist_bins, fname=image)
     mpimg.imsave("output_images/find_cars_{}".format(image.split("/")[-1]), out_img)
-
-
+mf_box_list=[]
 clip1 = VideoFileClip("project_video.mp4")
-clip = clip1.fl_image(process_frame) #NOTE: this function expects color images!!
+clip = clip1.fl_image(process_frame) 
 clip.write_videofile("output_images/output.mp4", audio=False)

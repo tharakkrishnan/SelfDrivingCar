@@ -1,19 +1,4 @@
-# Vehicle Detection
-[![Udacity - Self-Driving Car NanoDegree](https://s3.amazonaws.com/udacity-sdc/github/shield-carnd.svg)](http://www.udacity.com/drive)
-
-
-In this project, your goal is to write a software pipeline to detect vehicles in a video (start with the test_video.mp4 and later implement on full project_video.mp4), but the main output or product we want you to create is a detailed writeup of the project.  Check out the [writeup template](https://github.com/udacity/CarND-Vehicle-Detection/blob/master/writeup_template.md) for this project and use it as a starting point for creating your own writeup.  
-
-Creating a great writeup:
----
-A great writeup should include the rubric points as well as your description of how you addressed each point.  You should include a detailed description of the code used in each step (with line-number references and code snippets where necessary), and links to other supporting documents or external references.  You should include images in your writeup to demonstrate how your code works with examples.  
-
-All that said, please be concise!  We're not looking for you to write a book here, just a brief description of how you passed each rubric point, and references to the relevant code :). 
-
-You can submit your writeup in markdown or use another method and submit a pdf instead.
-
-The Project
----
+**Vehicle Detection Project**
 
 The goals / steps of this project are the following:
 
@@ -24,10 +9,107 @@ The goals / steps of this project are the following:
 * Run your pipeline on a video stream (start with the test_video.mp4 and later implement on full project_video.mp4) and create a heat map of recurring detections frame by frame to reject outliers and follow detected vehicles.
 * Estimate a bounding box for vehicles detected.
 
-Here are links to the labeled data for [vehicle](https://s3.amazonaws.com/udacity-sdc/Vehicle_Tracking/vehicles.zip) and [non-vehicle](https://s3.amazonaws.com/udacity-sdc/Vehicle_Tracking/non-vehicles.zip) examples to train your classifier.  These example images come from a combination of the [GTI vehicle image database](http://www.gti.ssr.upm.es/data/Vehicle_database.html), the [KITTI vision benchmark suite](http://www.cvlibs.net/datasets/kitti/), and examples extracted from the project video itself.   You are welcome and encouraged to take advantage of the recently released [Udacity labeled dataset](https://github.com/udacity/self-driving-car/tree/master/annotations) to augment your training data.  
+[//]: # (Image References)
+[image1a]: ./output_images/Training_images_for_vehicles.png
+[image1b]: ./output_images/Training_images_for_non-vehicles.png
+[image2a]: ./output_images/HOG_Features_Generated_for_Vehicle_Images.png
+[image2b]: ./output_images/HOG_Features_Generated_for_Non-Vehicle_Images.png
+[image3]: ./output_images/slide_windows_test1.png
+[image4]: ./output_images/bboxes_test1.png
+[image5]: ./output_images/heatmap_test1.png
+[image6]: ./output_images/final_test1.png
+[video1]: ./output_images/output.mp4
 
-Some example images for testing your pipeline on single frames are located in the `test_images` folder.  To help the reviewer examine your work, please save examples of the output from each stage of your pipeline in the folder called `ouput_images`, and include them in your writeup for the project by describing what each image shows.    The video called `project_video.mp4` is the video your pipeline should work well on.  
+### Histogram of Oriented Gradients (HOG)
 
-**As an optional challenge** Once you have a working pipeline for vehicle detection, add in your lane-finding algorithm from the last project to do simultaneous lane-finding and vehicle detection!
+#### 1. Extracted HOG features from the training images.
 
-**If you're feeling ambitious** (also totally optional though), don't stop there!  We encourage you to go out and take video of your own, and show us how you would implement this project on a new video!
+The code for this step is contained in cell 4 of the IPython notebook pipline.ipynb.  
+
+I started by reading in all the `vehicle` and `non-vehicle` images.  Here is an example of one of each of the `vehicle` and `non-vehicle` classes:
+
+![alt text][image1a] 
+
+![alt text][image1b] 
+
+I then explored different color spaces and different `skimage.hog()` parameters (`orientations`, `pixels_per_cell`, and `cells_per_block`).  I grabbed random images from each of the two classes and displayed them to get a feel for what the `skimage.hog()` output looks like.
+
+Here is an example using the `YCrCb` color space and HOG parameters of `orientations=9`, `pixels_per_cell=(8, 8)` and `cells_per_block=(2, 2)`:
+
+![alt text][image2a]
+
+![alt text][image2b]
+
+
+#### 2. Final choice of Features.
+
+I used the YCbCr color space to extract the features.
+
+I tried various values of parameters and then settled at:
+| Feature extraction parameters |
+|:-----------------------------:| 
+| orientation           9       | 
+| pix_per_cell          (8,8)   |
+| cell_per_block        (2,2)   |
+| spatial_size          (32,32) |
+| hist_bins             32      |
+
+I also augemented the HOG features with Color features by downsampling the image to 32,32 image and flattening it.
+I also added a color histogram with 32 bins. These three together form the featur vector to the SVM classifier.
+
+
+#### 3. Trained a classifier using your selected HOG features and color features.
+
+I trained a linear Support vector classifier by splitting the data into training and test set as shown in `classifier.py`.
+
+### Sliding Window Search
+I conducted on optimized sliding window search as shown in the `find_cars` function in `pipeline.py`.
+The search was restricted between rows 400 to 680 since this is the reegion of interest on the road where other vehicls will most likely be detected.
+
+![alt text][image3]
+
+Ultimately I searched on scale=1.5 using YCrCb 3-channel HOG features plus spatially binned color and histograms of color in the feature vector, which provided a nice result.  
+
+The vehicle is detected multiple times and each detection generates a new bounding box. The final bounding box around the vehicle is drawn by taking the entire width and height of all the boxes combined.
+
+<img src="./test_images/test1.jpg" alt="Drawing" style="width: 300px;"/> <img src="./output_images/bboxes_test1.png" alt="Drawing" style="width: 300px;"/>
+
+<img src="./test_images/test2.jpg" alt="Drawing" style="width: 300px;"/> <img src="./output_images/bboxes_test2.png" alt="Drawing" style="width: 300px;"/>
+
+<img src="./test_images/test3.jpg" alt="Drawing" style="width: 300px;"/> <img src="./output_images/bboxes_test3.png" alt="Drawing" style="width: 300px;"/>
+
+<img src="./test_images/test4.jpg" alt="Drawing" style="width: 300px;"/> <img src="./output_images/bboxes_test4.png" alt="Drawing" style="width: 300px;"/>
+
+<img src="./test_images/test5.jpg" alt="Drawing" style="width: 300px;"/>  <img src="./output_images/bboxes_test5.png" alt="Drawing" style="width: 300px;"/>
+
+<img src="./test_images/test6.jpg" alt="Drawing" style="width: 300px;"/> <img src="./output_images/bboxes_test6.png" alt="Drawing" style="width: 300px;"/>
+
+### Here are six frames, their corresponding heatmaps and final bounding boxes:
+<img src="./test_images/test1.jpg" alt="Drawing" style="width: 200px;"/> <img src="./output_images/heatmap_test1.png" alt="Drawing" style="width: 200px;"/> <img src="./output_images/final_test1.png" alt="Drawing" style="width: 200px;"/>
+
+<img src="./test_images/test2.jpg" alt="Drawing" style="width: 200px;"/> <img src="./output_images/heatmap_test2.png" alt="Drawing" style="width: 200px;"/> <img src="./output_images/final_test2.png" alt="Drawing" style="width: 200px;"/>
+
+<img src="./test_images/test3.jpg" alt="Drawing" style="width: 200px;"/> <img src="./output_images/heatmap_test3.png" alt="Drawing" style="width: 200px;"/> <img src="./output_images/final_test3.png" alt="Drawing" style="width: 200px;"/>
+
+<img src="./test_images/test4.jpg" alt="Drawing" style="width: 200px;"/> <img src="./output_images/heatmap_test4.png" alt="Drawing" style="width: 200px;"/> <img src="./output_images/final_test4.png" alt="Drawing" style="width: 200px;"/>
+
+<img src="./test_images/test5.jpg" alt="Drawing" style="width: 200px;"/> <img src="./output_images/heatmap_test5.png" alt="Drawing" style="width: 200px;"/> <img src="./output_images/final_test5.png" alt="Drawing" style="width: 200px;"/>
+
+<img src="./test_images/test6.jpg" alt="Drawing" style="width: 200px;"/> <img src="./output_images/heatmap_test6.png" alt="Drawing" style="width: 200px;"/> <img src="./output_images/final_test6.png" alt="Drawing" style="width: 200px;"/>
+
+
+---
+
+### Video Implementation
+
+#### 1. Filter for false positives and some method for combining overlapping bounding boxes.
+I recorded the positive detection and created bounding boxes in each frame of video. I saved the positive detection of a vehicle results from over 25 previous frames. As I traverse each frame I keep a count of each new detection of a vehicle nd discard vehicles that do not have positive detections over a threshhold. This is performed in lines 180-212 of `pipeline.py`
+
+Here's a [link to my video result](https://youtu.be/ixeJaC10Rl8)
+
+---
+
+### Discussion
+Improvements:
+ 1. use principal component analysis to reduce the dimensionality of the feature vector
+ 2. Use more scales while searching using sliding windows to improve the vehicle detection quality in more challenging videos.
