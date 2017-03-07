@@ -72,44 +72,56 @@ Ultimately I searched on scale=1.5 using YCrCb 3-channel HOG features plus spati
 
 The vehicle is detected multiple times and each detection generates a new bounding box. The final bounding box around the vehicle is drawn by taking the entire width and height of all the boxes combined.
 
-<img src="./test_images/test1.jpg" alt="Drawing" style="width: 300px;"/> <img src="./output_images/bboxes_test1.png" alt="Drawing" style="width: 300px;"/>
+#### 4. Filter for false positives and some method for combining overlapping bounding boxes.
+Heat-maps are used to remove both false positives and multiple detectors. 
+The heat-map image is initialized with dimensions equals to that of the input images.
+Add "heat" (+=1) for all pixels within windows where a positive detection is reported by the classifier.
+The hot parts of the map are where the cars are, and by imposing a threshold, I rejected areas affected by false positives.
+The `add_heat(heatmap, bbox_list)` and `apply_threshold(heatmap, threshold)` methods in the `heat_map.py` file encapsulate the functionalities described in above three items. 
+Based on the output of the `apply_threshold(heatmap, threshold)` methods, I drew bounding boxes around each detected car.
 
-<img src="./test_images/test2.jpg" alt="Drawing" style="width: 300px;"/> <img src="./output_images/bboxes_test2.png" alt="Drawing" style="width: 300px;"/>
+In addition to `add_heat(heatmap, bbox_list)` and `apply_threshold(heatmap, threshold)` I maintained a data-structure as a list of lists: each element in the primary list contains a secondary list of the bounding boxes found in a heatmap frame. In in order to improve the smoothness of the predicted bounding boxes I store a (configurable 25 ) number of heat-maps. When it comes to predicting the thresholded heat-map, we calculated the sum of last N heat-maps and that calculated heat-map passed to the apply_threshold(heatmap, threshold) method.
+I recorded the positive detection and created bounding boxes in each frame of video. I saved the positive detection of a vehicle results from over 25 previous frames. As I traverse each frame I keep a count of each new detection of a vehicle and discard vehicles that do not have positive detections over a threshhold. This is performed in lines 180-212 of `pipeline.py`
 
-<img src="./test_images/test3.jpg" alt="Drawing" style="width: 300px;"/> <img src="./output_images/bboxes_test3.png" alt="Drawing" style="width: 300px;"/>
+<img src="./test_images/test1.jpg" alt="alt text" style="width: 300px;"/> <img src="./output_images/bboxes_test1.png" alt="alt text" style="width: 300px;"/>
 
-<img src="./test_images/test4.jpg" alt="Drawing" style="width: 300px;"/> <img src="./output_images/bboxes_test4.png" alt="Drawing" style="width: 300px;"/>
+<img src="./test_images/test2.jpg" alt="alt text" style="width: 300px;"/> <img src="./output_images/bboxes_test2.png" alt="alt text" style="width: 300px;"/>
 
-<img src="./test_images/test5.jpg" alt="Drawing" style="width: 300px;"/>  <img src="./output_images/bboxes_test5.png" alt="Drawing" style="width: 300px;"/>
+<img src="./test_images/test3.jpg" alt="alt text" style="width: 300px;"/> <img src="./output_images/bboxes_test3.png" alt="alt text" style="width: 300px;"/>
 
-<img src="./test_images/test6.jpg" alt="Drawing" style="width: 300px;"/> <img src="./output_images/bboxes_test6.png" alt="Drawing" style="width: 300px;"/>
+<img src="./test_images/test4.jpg" alt="alt text" style="width: 300px;"/> <img src="./output_images/bboxes_test4.png" alt="alt text" style="width: 300px;"/>
+
+<img src="./test_images/test5.jpg" alt="alt text" style="width: 300px;"/>  <img src="./output_images/bboxes_test5.png" alt="alt text" style="width: 300px;"/>
+
+<img src="./test_images/test6.jpg" alt="alt text" style="width: 300px;"/> <img src="./output_images/bboxes_test6.png" alt="alt text" style="width: 300px;"/>
 
 ### Here are six frames, their corresponding heatmaps and final bounding boxes:
-<img src="./test_images/test1.jpg" alt="Drawing" style="width: 200px;"/> <img src="./output_images/heatmap_test1.png" alt="Drawing" style="width: 200px;"/> <img src="./output_images/final_test1.png" alt="Drawing" style="width: 200px;"/>
+<img src="./test_images/test1.jpg" alt="alt text" style="width: 200px;"/> <img src="./output_images/heatmap_test1.png" alt="alt text" style="width: 200px;"/> <img src="./output_images/final_test1.png" alt="alt text" style="width: 200px;"/>
 
-<img src="./test_images/test2.jpg" alt="Drawing" style="width: 200px;"/> <img src="./output_images/heatmap_test2.png" alt="Drawing" style="width: 200px;"/> <img src="./output_images/final_test2.png" alt="Drawing" style="width: 200px;"/>
+<img src="./test_images/test2.jpg" alt="alt text" style="width: 200px;"/> <img src="./output_images/heatmap_test2.png" alt="alt text" style="width: 200px;"/> <img src="./output_images/final_test2.png" alt="alt text" style="width: 200px;"/>
 
-<img src="./test_images/test3.jpg" alt="Drawing" style="width: 200px;"/> <img src="./output_images/heatmap_test3.png" alt="Drawing" style="width: 200px;"/> <img src="./output_images/final_test3.png" alt="Drawing" style="width: 200px;"/>
+<img src="./test_images/test3.jpg" alt="alt text" style="width: 200px;"/> <img src="./output_images/heatmap_test3.png" alt="alt text" style="width: 200px;"/> <img src="./output_images/final_test3.png" alt="alt text" style="width: 200px;"/>
 
-<img src="./test_images/test4.jpg" alt="Drawing" style="width: 200px;"/> <img src="./output_images/heatmap_test4.png" alt="Drawing" style="width: 200px;"/> <img src="./output_images/final_test4.png" alt="Drawing" style="width: 200px;"/>
+<img src="./test_images/test4.jpg" alt="alt text" style="width: 200px;"/> <img src="./output_images/heatmap_test4.png" alt="alt text" style="width: 200px;"/> <img src="./output_images/final_test4.png" alt="alt text" style="width: 200px;"/>
 
-<img src="./test_images/test5.jpg" alt="Drawing" style="width: 200px;"/> <img src="./output_images/heatmap_test5.png" alt="Drawing" style="width: 200px;"/> <img src="./output_images/final_test5.png" alt="Drawing" style="width: 200px;"/>
+<img src="./test_images/test5.jpg" alt="alt text" style="width: 200px;"/> <img src="./output_images/heatmap_test5.png" alt="alt text" style="width: 200px;"/> <img src="./output_images/final_test5.png" alt="alt text" style="width: 200px;"/>
 
-<img src="./test_images/test6.jpg" alt="Drawing" style="width: 200px;"/> <img src="./output_images/heatmap_test6.png" alt="Drawing" style="width: 200px;"/> <img src="./output_images/final_test6.png" alt="Drawing" style="width: 200px;"/>
+<img src="./test_images/test6.jpg" alt="alt text" style="width: 200px;"/> <img src="./output_images/heatmap_test6.png" alt="alt text" style="width: 200px;"/> <img src="./output_images/final_test6.png" alt="alt text" style="width: 200px;"/>
 
 
 ---
 
 ### Video Implementation
 
-#### 1. Filter for false positives and some method for combining overlapping bounding boxes.
-I recorded the positive detection and created bounding boxes in each frame of video. I saved the positive detection of a vehicle results from over 25 previous frames. As I traverse each frame I keep a count of each new detection of a vehicle nd discard vehicles that do not have positive detections over a threshhold. This is performed in lines 180-212 of `pipeline.py`
-
 Here's a [link to my video result](https://youtu.be/ixeJaC10Rl8)
 
 ---
 
 ### Discussion
+Shortcomings:
+Much of the computations performed on the pipeline are computationally heavy and are not performant in real-time.
+
 Improvements:
  1. use principal component analysis to reduce the dimensionality of the feature vector
  2. Use more scales while searching using sliding windows to improve the vehicle detection quality in more challenging videos.
+ 3. Recently, new deep learning based method such ash YOLO and SSD have been recorded very good performance on Detection and Tracking benchmark datasets. 
