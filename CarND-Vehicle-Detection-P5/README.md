@@ -129,12 +129,14 @@ Here's a [link to my video result](https://youtu.be/ixeJaC10Rl8)
 ---
 
 ### 5. Discussion
-Shortcomings:
+#### 5.1 Shortcomings:
+
 1. Search in multiple scales to detect cars that are further down the road
 2. Much of the computations performed on the pipeline are computationally heavy and are not performant in real-time. 
 3. Long feature vector length could be much reduced.
 
-Improvements:
+#### 5.2 Improvements:
+
  1. use principal component analysis to reduce the dimensionality of the feature vector
  2. Use multiple scales while searching using sliding windows to improve the vehicle detection quality in more challenging videos.
  3. Recently, new deep learning based method such ash YOLO and SSD have been recorded very good performance on Detection and Tracking benchmark datasets.
