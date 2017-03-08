@@ -1,2 +1,5 @@
 *.mp4
-*.jpg
+vggnet.*
+CarND-BehavioralTraining-P3/data/original/IMG/
+CarND-TrafficSigns-P2/traffic-signs-data.tgz
+CarND-TrafficSigns-P2/traffic-signs-data/
