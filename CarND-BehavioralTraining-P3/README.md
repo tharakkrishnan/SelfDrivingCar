@@ -15,10 +15,10 @@ The goals / steps of this project are the following:
 
 My project includes the following files:
 * `train_steering_model.ipynb` containing the script to create and train the model
-* drive.py for driving the car in autonomous mode
-* model.h5 containing a trained convolution neural network 
-* README.md summarizing the results
-* run1.avi video of simulator in autonomous mode 
+* `drive.py` for driving the car in autonomous mode
+* `model.h5` containing a trained convolution neural network 
+* `README.md` summarizing the results
+* `run2.avi` video of simulator in autonomous mode 
 
 Using the Udacity provided simulator and my drive.py file, the car can be driven autonomously around the track by executing 
 ```sh
@@ -105,17 +105,30 @@ I used a generator to train the model that would automatically augment the data 
 
 I used this training data for training the model. The validation set helped determine if the model was over or under fitting. The ideal number of epochs was 6 (with 128 sample batches) as evidenced by the flattening of validation loss curve from this epoch onward.
 
+#### Sample augmentations
+|Original                       |  Sheared          |     Cropped  |   Random flipped       |  Random gamma     |
+|:-----------------------------:|:-----------------:|:------------:|:----------------------:|:-----------------:|
+##### Left Camera Image:
+<img src="./output_images/left_2016_12_01_13_33_08_142.jpg" width="150"/> <img src="./output_images/sheared_left_2016_12_01_13_33_08_142.jpg" width="150"/> <img src="./output_images/cropped_left_2016_12_01_13_33_08_142.jpg" width="150"/> <img src="./output_images/random_flip_left_2016_12_01_13_33_08_142.jpg" width="150"/> <img src="./output_images/random_gamma_left_2016_12_01_13_33_08_142.jpg" width="150"/>
 
-### D. Results
+##### Center Camera Image:
+<img src="./output_images/center_2016_12_01_13_33_23_023.jpg" width="150"/> <img src="./output_images/sheared_center_2016_12_01_13_33_23_023.jpg" width="150"/> <img src="./output_images/cropped_center_2016_12_01_13_33_23_023.jpg" width="150"/> <img src="./output_images/random_flip_center_2016_12_01_13_33_23_023.jpg" width="150"/> <img src="./output_images/random_gamma_center_2016_12_01_13_33_23_023.jpg" width="150"/>
+
+##### Left Camera Image:
+<img src="./output_images/right_2016_12_01_13_32_44_772.jpg" width="150"/> <img src="./output_images/sheared_right_2016_12_01_13_32_44_772.jpg" width="150"/> <img src="./output_images/cropped_right_2016_12_01_13_32_44_772.jpg" width="150"/> <img src="./output_images/random_flip_right_2016_12_01_13_32_44_772.jpg" width="150"/> <img src="./output_images/random_gamma_right_2016_12_01_13_32_44_772.jpg" width="150"/>
+
+### D. Results and Conclusions
 
 The model was trained for 8 epochs with 200 batches each, with each batch consisting of 256 samples.
 The training loss converged quickly but the validation loss decreased slowly indicating that model continued to learn over 8 epochs. 
 
-![alt text][image2]
+<img src="./loss.png" width="600"/>
 
 The model was then hooked up to drive the simulator by running:
 
 python drive.py model.h5 
 
-The video of the autonomous driving is at run1.avi also on youtube at:
+The video of the autonomous driving is at `run2.avi` also on youtube at:
+
+The key to getting the model to perform was to get a balanced data-set by removing low-throttle values, augmenting the data to remove bias due to the training proceeding in a one direction around the track and making sure that the model is trained to recover from near-failure conditions like going off-track.
 
