@@ -17,6 +17,8 @@ from moviepy.editor import VideoFileClip
 from features import convert_color, get_hog_features, bin_spatial, color_hist
 from heat_map import add_heat, draw_labeled_bboxes, apply_threshold 
 
+from IPython.core.debugger import Tracer
+
 POSITIVE_DETECTION_THRESHOLD = 20
 FRAMES_USED_FOR_POSITIVE_DETECTION=25
 
@@ -135,12 +137,11 @@ def find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, ce
     cells_per_step = 2  # Instead of overlap, define how many cells to step
     nxsteps = (nxblocks - nblocks_per_window) // cells_per_step
     nysteps = (nyblocks - nblocks_per_window) // cells_per_step
-    
+
     # Compute individual channel HOG features for the entire image
     hog1 = get_hog_features(ch1, orient, pix_per_cell, cell_per_block, feature_vec=False)
     hog2 = get_hog_features(ch2, orient, pix_per_cell, cell_per_block, feature_vec=False)
     hog3 = get_hog_features(ch3, orient, pix_per_cell, cell_per_block, feature_vec=False)
-    
     
     bb_list=[]
     copy_image = np.copy(draw_img)
@@ -149,6 +150,7 @@ def find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, ce
         for yb in range(nysteps):
             ypos = yb*cells_per_step
             xpos = xb*cells_per_step
+            Tracer()()
             # Extract HOG for this patch
             hog_feat1 = hog1[ypos:ypos+nblocks_per_window, xpos:xpos+nblocks_per_window].ravel() 
             hog_feat2 = hog2[ypos:ypos+nblocks_per_window, xpos:xpos+nblocks_per_window].ravel() 
@@ -240,6 +242,7 @@ for image in images:
     img = mpimg.imread(image)
     out_img = find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, cell_per_block, spatial_size, hist_bins, fname=image)
     mpimg.imsave("output_images/find_cars_{}".format(image.split("/")[-1]), out_img)
+exit()
 mf_box_list=[]
 clip1 = VideoFileClip("project_video.mp4")
 clip = clip1.fl_image(process_frame) 
