@@ -1,7 +1,7 @@
 # Self-Driving Car Projects
 
 ## 1. Finding lanes in a video stream using OpenCV
-* Use openCV, Canny edge dtector, Hough detector and region of interest masks to build a simple lane detection pipeline
+* Use openCV, Canny edge detector, Hough transform and region of interest masks to build a simple lane detection pipeline
 
 ## 2. Identifying traffic signs using Tensorflow
 * Use Tensor-flow and Convolutional neural-networks (CNNs) to classify different types of traffic signs.
