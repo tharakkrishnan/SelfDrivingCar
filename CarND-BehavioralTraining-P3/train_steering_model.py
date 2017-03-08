@@ -21,6 +21,7 @@ from sklearn.model_selection import train_test_split
 STEER_OFFSET = 0.22
 CROPPING_TOP=60
 CROPPING_BOTTOM=20
+RESIZE_DIM=(64,64)
 
 
 def get_model():
@@ -79,6 +80,9 @@ def random_gamma(image):
 def crop(img, top=CROPPING_TOP, bottom=CROPPING_BOTTOM):
     return img[top:img.shape[0]-bottom]
 
+def resize(img, resize_dim=RESIZE_DIM):
+    return imresize(img, resize_dim)
+
 def random_flip(img, steer_angle, prob=0.5):
     if bernoulli.rvs(prob) == 1:
         return np.fliplr(img), -1 * steer_angle
@@ -119,7 +123,7 @@ def generate_new_image(img, steer_angle, resize_dim=(64, 64), shear_prob=0.2, sa
     img = random_gamma(img)
     if save_image:
             plt.imsave("data/output_images/random_gamma_{}".format(fname.split("/")[-1]), img)
-    img = imresize(img, resize_dim)
+    img = resize(img, resize_dim=resize_dim)
     if save_image:
             plt.imsave("data/output_images/resized64x64_{}".format(fname.split("/")[-1]), img)
     return img, steer_angle
