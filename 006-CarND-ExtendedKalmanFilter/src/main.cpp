@@ -74,7 +74,7 @@ int main(int argc, char* argv[]) {
     MeasurementPackage meas_package;
     GroundTruthPackage gt_package;
     istringstream iss(line);
-    long long timestamp;
+    long timestamp;
 
     // reads first element from the current line
     iss >> sensor_type;
