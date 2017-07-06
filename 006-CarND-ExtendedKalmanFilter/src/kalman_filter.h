@@ -3,6 +3,8 @@
 #include "Eigen/Dense"
 
 class KalmanFilter {
+private:
+  void NormalizeAngle(double& phi);
 public:
 
   // state vector

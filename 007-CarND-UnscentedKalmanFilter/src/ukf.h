@@ -14,13 +14,13 @@ class UKF {
 public:
 
   ///* initially set to false, set to true in first call of ProcessMeasurement
-  bool is_initialized_;
+  bool is_initialized;
 
   ///* if this is false, laser measurements will be ignored (except for init)
-  bool use_laser_;
+  bool use_laser;
 
   ///* if this is false, radar measurements will be ignored (except for init)
-  bool use_radar_;
+  bool use_radar;
 
   ///* state vector: [pos1 pos2 vel_abs yaw_angle yaw_rate] in SI units and rad
   VectorXd x_;
@@ -29,49 +29,49 @@ public:
   MatrixXd P_;
 
   ///* predicted sigma points matrix
-  MatrixXd Xsig_pred_;
+  MatrixXd Xsig_pred;
 
   ///* time when the state is true, in us
-  long time_us_;
+  long time_us;
 
   ///* Process noise standard deviation longitudinal acceleration in m/s^2
-  double std_a_;
+  double std_a;
 
   ///* Process noise standard deviation yaw acceleration in rad/s^2
-  double std_yawdd_;
+  double std_yawdd;
 
   ///* Laser measurement noise standard deviation position1 in m
-  double std_laspx_;
+  double std_laspx;
 
   ///* Laser measurement noise standard deviation position2 in m
-  double std_laspy_;
+  double std_laspy;
 
   ///* Radar measurement noise standard deviation radius in m
-  double std_radr_;
+  double std_radr;
 
   ///* Radar measurement noise standard deviation angle in rad
-  double std_radphi_;
+  double std_radphi;
 
   ///* Radar measurement noise standard deviation radius change in m/s
-  double std_radrd_ ;
+  double std_radrd;
 
   ///* Weights of sigma points
-  VectorXd weights_;
+  VectorXd weights;
 
   ///* State dimension
-  int n_x_;
+  int Nx;
 
   ///* Augmented state dimension
-  int n_aug_;
+  int Naug;
 
   ///* Sigma point spreading parameter
-  double lambda_;
+  double lambda;
 
   ///* the current NIS for radar
-  double NIS_radar_;
+  double NIS_radar;
 
   ///* the current NIS for laser
-  double NIS_laser_;
+  double NIS_laser;
 
   /**
    * Constructor

@@ -45,8 +45,8 @@ FusionEKF::FusionEKF() {
     // initialize a standard Kalmal Filter class.
     ekf_.Init(x_, P_, F_, H_laser_, R_laser_, Q_);
 
-    sigma_ax=20;
-    sigma_ay=20;
+    sigma_ax=9;
+    sigma_ay=9;
 }
 
 /**
@@ -113,9 +113,9 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
             0, 0, 1, 0,
             0, 0, 0, 1;
 
-    double dt_4 = time_diff*time_diff*time_diff*time_diff;
-    double dt_3 = time_diff*time_diff*time_diff;
-    double dt_2 = time_diff*time_diff;
+    const double dt_4 = time_diff*time_diff*time_diff*time_diff;
+    const double dt_3 = time_diff*time_diff*time_diff;
+    const double dt_2 = time_diff*time_diff;
 
     ekf_.Q_ << dt_4/4*sigma_ax, 0, dt_3/2*sigma_ax, 0,
             0, dt_4/4*sigma_ay, 0, dt_3/2*sigma_ay,
