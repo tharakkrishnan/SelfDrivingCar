@@ -1,8 +1,11 @@
 #ifndef UKF_H
 #define UKF_H
-#include "Eigen/Dense"
 #include "measurement_package.h"
+#include "Eigen/Dense"
 #include <vector>
+#include <string>
+#include <fstream>
+#include "tools.h"
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
@@ -79,6 +82,18 @@ public:
    * Destructor
    */
   virtual ~UKF();
+
+    /**
+     * Init Initializes Unscented Kalman filter
+     */
+    void Init();
+
+    /**
+     * Helper functions
+     */
+    MatrixXd AugmentedSigmaPoints();
+
+    MatrixXd PredictedSigmaPoints(double timdediff);
 
   /**
    * ProcessMeasurement
