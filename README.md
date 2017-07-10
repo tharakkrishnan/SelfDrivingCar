@@ -30,3 +30,6 @@
 * Run the pipeline on a video stream and create a heat map of recurring detections frame by frame to reject outliers and follow detected vehicles.
 * Estimate a bounding box for vehicles detected.
 
+## 6. Extended Kalman filter
+## 7. Unscented Kalman filter
+## 8. Particle Filters
