@@ -1,3 +1,4 @@
+.vscode/*
 *.mp4
 vggnet.*
 003-CarND-BehavioralTraining/data/original/IMG/
