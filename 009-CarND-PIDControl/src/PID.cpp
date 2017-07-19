@@ -10,10 +10,10 @@ PID::PID() {}
 
 PID::~PID() {}
 
-void PID::Init(double Kp, double Ki, double Kd) {
-    Kp = Kp;
-    Ki = Ki;
-    Kd = Kd;
+void PID::Init(double Cp, double Ci, double Cd) {
+    Kp = Cp;
+    Ki = Ci;
+    Kd = Cd;
 
     p_error = 1.0;
     i_error = 0.0;
