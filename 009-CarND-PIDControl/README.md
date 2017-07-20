@@ -1,5 +1,24 @@
 # CarND-Controls-PID
-Self-Driving Car Engineer Nanodegree Program
+
+## PID Control
+
+PID controllers are simple reactive controllers that are widely used. The difference between the measured and the desired value (setpoint) of a process variable of a system is fed into the PID controller as an error signal. Depending on the PID parameters a control output is generated to steer the system closer to the setpoint. In the present project, a car simulator produces the error signal as the distance between the actual car position on the road and a reference trajectory, known as cross-track error (cte). The PID controller is designed to minimize the distance to this reference trajectory. The primary control output of the PID controller here is the steering angle.
+
+### P - proportional gain
+
+The proportional term computes an output proportional to the cross-track error. A pure P - controller is unstable and at best oscillates about the setpoint. The proportional gain contributes a control output to the steering angle of the form -K_p cte with a positive constant K_p.
+
+### D - differential gain
+
+The oscillations caused by purely D control can be mitigated by a term proportional to the derivative of the cross-track error. The derivative gain contributes a control output of the form -K_d d/dt cte, with a positive constant K_d.
+
+### I - integral gain
+
+A third contribution is given by the integral gain which simply sums up the cross-track error over time. The corresponding contribution to the steering angle is given by -K_i sum(cte). Thereby, biases can be mitigated, for instance if a zero steering angle does not correspond to a straight trajectory. At high speeds this term can also be useful to accumulate a large error signal quickly, for instance when the car is carried out sideways from the reference trajectory. This allows to reduce proportional gain, which causes oscillations at high speeds. 
+
+### Hyperparameter tuning
+
+All parameters were tuned manually by varying each of the gains in a similar fashion to the "twiddle" algorithm. This allowed me to to intuitively understand the contribution of each gain factor.
 
 ---
 
