@@ -6,7 +6,7 @@
 using CppAD::AD;
 
 // TODO: Set the timestep length and duration
-size_t N = 10;
+size_t N = 20;
 double dt = 0.15;
 
 // This value assumes the model presented in the classroom is used.
@@ -24,6 +24,14 @@ const double Lf = 2.67;
 const double ref_cte = 0;
 const double ref_epsi = 0;
 const double ref_v = 50;
+
+const float Kcte = 3000;
+const float Kepsi = 100;
+const float Kv = 1;
+const float Kdelta = 50;
+const float Ka = 2.5;
+const float Kdelta_diff = 80;
+const float Ka_diff = 12.5;
 
 size_t x_start = 0;
 size_t y_start = x_start + N;
@@ -54,23 +62,23 @@ class FG_eval
         // Reference state cost.
         for (size_t i = 0; i < N; i++)
         {
-            fg[0] += 300 * CppAD::pow(vars[cte_start + i] - ref_cte, 2);
-            fg[0] += 70 * CppAD::pow(vars[epsi_start + i] - ref_epsi, 2);
-            fg[0] += CppAD::pow(vars[v_start + i] - ref_v, 2);
+            fg[0] += Kcte * CppAD::pow(vars[cte_start + i] - ref_cte, 2);
+            fg[0] += Kepsi * CppAD::pow(vars[epsi_start + i] - ref_epsi, 2);
+            fg[0] += Kv * CppAD::pow(vars[v_start + i] - ref_v, 2);
         }
 
         // Actuators cost.
         for (size_t i = 0; i < N - 1; i++)
         {
-            fg[0] += 50 * CppAD::pow(vars[delta_start + i], 2);
-            fg[0] += 2.5 * CppAD::pow(vars[a_start + i], 2);
+            fg[0] += Kdelta * CppAD::pow(vars[delta_start + i], 2);
+            fg[0] += Ka * CppAD::pow(vars[a_start + i], 2);
         }
 
         // Gap between sequential actuations.
         for (size_t i = 0; i < N - 2; i++)
         {
-            fg[0] += 80 * CppAD::pow(vars[delta_start + i + 1] - vars[delta_start + i], 2);
-            fg[0] += 12.5 * CppAD::pow(vars[a_start + i + 1] - vars[a_start + i], 2);
+            fg[0] += Kdelta_diff * CppAD::pow(vars[delta_start + i + 1] - vars[delta_start + i], 2);
+            fg[0] += Ka_diff * CppAD::pow(vars[a_start + i + 1] - vars[a_start + i], 2);
         }
 
         fg[1 + x_start] = vars[x_start];
