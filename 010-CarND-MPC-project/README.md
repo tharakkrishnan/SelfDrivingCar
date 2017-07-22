@@ -1,5 +1,48 @@
 # CarND-Controls-MPC
-Self-Driving Car Engineer Nanodegree Program
+
+## Abstract
+
+In this project we developed a kinematic bicycle model based predictive controller to drive a car around the a known track.
+
+## The vehicle model
+We use a kinematic vehicle model that ignores dynamical effects such as inertia, friction, tire forces etc. 
+
+The model consists of:
+1. x:  The car's position along the horizontal axis
+2. y:  The car's position along the vertical axis
+3. psi: heading angle
+4. cte: Cross track error against a predicted polynomial curve fit
+5. epsi: Orientation error against the predicted polynomial curve fit
+
+## Polynomial Fitting and MPC Preprocessing
+
+We receive data from simulator as an array of waypoints of x and y coordinates in the global coordinate system. However, we need to perform all computations in the vehicle coordinate system. So following transformation was used:
+
+vehicle_x[i] = map_x * cos(psi) + map_y * sin(psi);
+vehicle_y[i] = -map_x * sin(psi) + map_y * cos(psi);
+
+Optimization is used to predict the trajectory of the vehicle for the next N points. 
+
+The cost function is a sum of squares of: 
+  1. cross-track error
+  2. error in the heading direction
+  3. difference between instantaneous and  reference velocity
+  4. the actuator values 
+  5. difference of actuator values in adjacent time steps.
+The optimizer tries to minimize this sum in order to drive the vehicle successfully around the track at a moderate speed.
+
+## Hyper-parameter tuning
+The N waypoints together predict the trajectory for time T by breaking it up into N
+discrete time periods each of length dt.
+
+A large value of N will result in longer trajectory selection which will invariably be inaccurate for a path that consists of sharp curves.
+A small value for dt will increase actuator error causing oscillations. A larger dt will allow for a smoother drive but will not allow us to respond quickly to changes in orientation.
+I chose a N = 20 and dt = 0.15 which allowed a prediction time of 3 seconds. 
+
+In addition I also tuned the cost coefficients empirically for each of the cost contributions detailed in the section above so I can achieve a smoother ride.
+
+
+
 
 ---
 
