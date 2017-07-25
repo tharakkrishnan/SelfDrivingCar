@@ -139,7 +139,7 @@ int main()
               3);
 
           double cte = polyeval(coeffs, 0);
-          double epsi = atan(coeffs[1]);
+          double epsi = -atan(coeffs[1]);
 
           Eigen::VectorXd state(6);
           state << 0.0, 0.0, 0.0, v, cte, epsi;
@@ -147,11 +147,13 @@ int main()
           auto vars = mpc.Solve(state, coeffs);
           double steer_value = vars[0];
           double throttle_value = vars[1];
+          mpc.delta_prev = steer_value;
+          mpc.a_prev = throttle_value;
 
           json msgJson;
           // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
           // Otherwise the values will be in between [-deg2rad(25), deg2rad(25] instead of [-1, 1].
-          msgJson["steering_angle"] = -1 * steer_value;
+          msgJson["steering_angle"] = -1 *steer_value/deg2rad(25);
           msgJson["throttle"] = throttle_value;
 
 

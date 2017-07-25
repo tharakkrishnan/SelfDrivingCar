@@ -6,8 +6,8 @@
 using CppAD::AD;
 
 // TODO: Set the timestep length and duration
-size_t N = 20;
-double dt = 0.15;
+size_t N = 12;
+double dt = 0.05;
 
 // This value assumes the model presented in the classroom is used.
 //
@@ -23,15 +23,15 @@ const double Lf = 2.67;
 
 const double ref_cte = 0;
 const double ref_epsi = 0;
-const double ref_v = 50;
+const double ref_v = 70;
 
-const float Kcte = 3000;
-const float Kepsi = 100;
+const float Kcte = 1;
+const float Kepsi = 1;
 const float Kv = 1;
-const float Kdelta = 50;
-const float Ka = 2.5;
-const float Kdelta_diff = 80;
-const float Ka_diff = 12.5;
+const float Kdelta = 1;
+const float Ka = 10;
+const float Kdelta_diff = 600;
+const float Ka_diff = 1;
 
 size_t x_start = 0;
 size_t y_start = x_start + N;
@@ -47,7 +47,8 @@ class FG_eval
   public:
     // Fitted polynomial coefficients
     Eigen::VectorXd coeffs;
-    FG_eval(Eigen::VectorXd coeffs) { this->coeffs = coeffs; }
+    vector<double> previous_actuations;
+    FG_eval(Eigen::VectorXd coeffs, vector<double> prev_actuations) { this->coeffs = coeffs; this->previous_actuations = prev_actuations;}
 
     typedef CPPAD_TESTVECTOR(AD<double>) ADvector;
     void operator()(ADvector &fg, const ADvector &vars)
@@ -131,7 +132,7 @@ MPC::~MPC() {}
 vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs)
 {
     bool ok = true;
-    
+
     typedef CPPAD_TESTVECTOR(double) Dvector;
 
     // TODO: Set the number of model variables (includes both states and inputs).
@@ -188,6 +189,20 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs)
         vars_upperbound[i] = 1.0;
     }
 
+    // constrain delta to be the previous control for the latency time
+    for (size_t i = delta_start; i < delta_start + latency; i++)
+    {
+        vars_lowerbound[i] = delta_prev;
+        vars_upperbound[i] = delta_prev;
+    }
+
+    // constrain a to be the previous control for the latency time
+    for (size_t i = a_start; i < a_start + latency; i++)
+    {
+        vars_lowerbound[i] = a_prev;
+        vars_upperbound[i] = a_prev;
+    }
+
     // Lower and upper limits for the constraints
     // Should be 0 besides initial state.
     Dvector constraints_lowerbound(n_constraints);
@@ -213,7 +228,8 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs)
     constraints_upperbound[epsi_start] = epsi;
 
     // object that computes objective and constraints
-    FG_eval fg_eval(coeffs);
+    vector<double> act = {delta_prev, a_prev};
+    FG_eval fg_eval(coeffs, act);
 
     //
     // NOTE: You don't have to worry about these options
@@ -250,11 +266,15 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs)
 
     this->mpc_x_vals = {};
     this->mpc_y_vals = {};
+    this->delta = {};
+    this->a={};
     for (size_t i = 0; i < N - 1; i++)
     {
-        this->mpc_x_vals.push_back(solution.x[x_start + i + 1]);
-        this->mpc_y_vals.push_back(solution.x[y_start + i + 1]);
+        this->mpc_x_vals.push_back(solution.x[x_start + i]);
+        this->mpc_y_vals.push_back(solution.x[y_start + i]);
+        this->delta.push_back(solution.x[delta_start + i]);
+        this->a.push_back(solution.x[a_start+i]);
     }
 
-    return {solution.x[delta_start], solution.x[a_start]};
+    return {this->delta[latency], this->a[latency]};
 }

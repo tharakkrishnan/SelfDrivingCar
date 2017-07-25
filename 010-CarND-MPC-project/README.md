@@ -41,9 +41,11 @@ discrete time periods each of length dt.
 
 A large value of N will result in longer trajectory selection which will invariably be inaccurate for a path that consists of sharp curves.
 A small value for dt will increase actuator error causing oscillations. A larger dt will allow for a smoother drive but will not allow us to respond quickly to changes in orientation.
-I chose a N = 20 and dt = 0.15 which allowed a prediction time of 3 seconds. 
+I chose a N = 12 and dt = 0.05 which allowed a prediction time of  0.6 seconds. 
 
 In addition I also tuned the cost coefficients empirically for each of the cost contributions detailed in the section above so I can achieve a smoother ride.
+
+In order to compensae for the effects of latency on the actuations, I stored the value for the actuations and applied the actuations taking into account the delay. I also constrained the value of the actuations to previous values for the period of the latency.
 
 
 
