@@ -14,6 +14,10 @@ The model consists of:
 4. cte: Cross track error against a predicted polynomial curve fit
 5. epsi: Orientation error against the predicted polynomial curve fit
 
+## Kinematic Model equations
+[image1]: ./equations.png
+![alt text][image1]
+
 ## Polynomial Fitting and MPC Preprocessing
 
 We receive data from simulator as an array of waypoints of x and y coordinates in the global coordinate system. However, we need to perform all computations in the vehicle coordinate system. So following transformation was used:
