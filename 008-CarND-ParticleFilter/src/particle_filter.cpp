@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <iostream>
 #include <numeric>
+#include <iterator>
 
 #include "particle_filter.h"
 #include "helper_functions.h"
@@ -21,7 +22,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[])
     // NOTE: Consult particle_filter.h for more information about this method (and others in this file).
 
     // specify number of particles
-    num_particles = 500;
+    num_particles = 100;
 
     // clear particles and weights vectors
     particles.clear();
@@ -41,6 +42,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[])
         temp_particle.x = x_random(gen);
         temp_particle.y = y_random(gen);
         temp_particle.theta = theta_random(gen);
+        temp_particle.weight = 1;
 
         particles.push_back(temp_particle);
         weights.push_back(temp_particle.weight);
@@ -62,19 +64,24 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
     std::normal_distribution<double> theta_random(0, std_pos[2]);
 
     // handling division by zero error
-    if (fabs(0.0001) > yaw_rate)
+     for (int i = 0; i < num_particles; i++)
     {
-        yaw_rate = 0.0001;
-    }
-    for (int i = 0; i < num_particles; i++)
-    {
+        if (fabs(0.0001) > yaw_rate)
+        {
+        particles[i].x += velocity * delta_t * cos(particles[i].theta);
+        particles[i].y += velocity * delta_t * sin(particles[i].theta);
+        }
+        else{
         particles[i].x +=
-            (velocity / yaw_rate) * (sin(particles[i].theta + yaw_rate * delta_t) - sin(particles[i].theta)) +
-            x_random(gen);
+            (velocity / yaw_rate) * (sin(particles[i].theta + yaw_rate * delta_t) - sin(particles[i].theta));
         particles[i].y +=
-            (velocity / yaw_rate) * (cos(particles[i].theta) - cos(particles[i].theta + yaw_rate * delta_t)) +
-            y_random(gen);
-        particles[i].theta += yaw_rate * delta_t + theta_random(gen);
+            (velocity / yaw_rate) * (cos(particles[i].theta) - cos(particles[i].theta + yaw_rate * delta_t));
+        particles[i].theta += yaw_rate * delta_t;
+        }
+        particles[i].x += x_random(gen);
+        particles[i].y += y_random(gen);
+        particles[i].theta += theta_random(gen);
+
     }
 }
 
@@ -126,9 +133,9 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 
                 Map::single_landmark_s current_landmark = map_landmarks.landmark_list[k];
                 double distance =
-                    fabs(transformed_x - current_landmark.x_f) + fabs(transformed_y - current_landmark.y_f);
+                    dist(transformed_x, transformed_y, current_landmark.x_f, current_landmark.y_f);
 
-                // looking at neatest landmark which matches with the observations
+                // looking at nearest landmark which matches with the observations
                 if (distance < min_sensor_distance)
                 {
                     min_sensor_distance = distance;
@@ -138,12 +145,12 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 
             // Next, we calculate weight using Normal Distribution
             long double prob = exp(-0.5 *
-                                   (((nearest_landmark.x_f - transformed_x) * (nearest_landmark.x_f - transformed_x)) /
-                                        (std_landmark[0] * std_landmark[0]) +
-                                    ((nearest_landmark.y_f - transformed_y) * (nearest_landmark.y_f - transformed_y)) /
-                                        (std_landmark[1] * std_landmark[1])));
-            long double norm_const = 2 * M_PI * std_landmark[0] * std_landmark[1];
-            weight *= prob / norm_const;
+                                   ((pow(nearest_landmark.x_f - transformed_x, 2) /
+                                        pow(std_landmark[0], 2)) +
+                                    (pow(nearest_landmark.y_f - transformed_y, 2) /
+                                        pow(std_landmark[1], 2))));
+            long double K = 2 * M_PI * std_landmark[0] * std_landmark[1];
+            weight *= prob / K;
         }
         particles[i].weight = weight;
         weights[i] = weight;
@@ -167,6 +174,7 @@ void ParticleFilter::resample()
         new_particles.push_back(particles[number]);
     }
     particles = new_particles;
+    weights.clear();
 }
 
 Particle ParticleFilter::SetAssociations(Particle particle, std::vector<int> associations, std::vector<double> sense_x, std::vector<double> sense_y)
@@ -216,14 +224,3 @@ std::string ParticleFilter::getSenseY(Particle best)
     return s;
 }
 
-void ParticleFilter::write(std::string filename)
-{
-    // You don't need to modify this file.
-    std::ofstream dataFile;
-    dataFile.open(filename, std::ios::app);
-    for (int i = 0; i < num_particles; ++i)
-    {
-        dataFile << particles[i].x << " " << particles[i].y << " " << particles[i].theta << "\n";
-    }
-    dataFile.close();
-}

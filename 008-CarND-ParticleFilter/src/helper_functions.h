@@ -65,7 +65,7 @@ inline double * getError(double gt_x, double gt_y, double gt_theta, double pf_x,
 	return error;
 }
 
-/* Reads map data from a file.
+/* Reads map danorm_constta from a file.
  * @param filename Name of file containing map data.
  * @output True if opening and reading file was successful
  */

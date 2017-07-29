@@ -2,6 +2,7 @@
 #include <iostream>
 #include "json.hpp"
 #include <math.h>
+#include <iterator>
 #include "particle_filter.h"
 
 using namespace std;
@@ -63,14 +64,14 @@ int main()
         auto j = json::parse(s);
         std::string event = j[0].get<std::string>();
 
-        std::cout << "data:" << data << "s:" << s << "j: " << j<< std::endl;
+        //std::cout << "data:" << data << "s:" << s << "j: " << j<< std::endl;
 
 
         if (event == "telemetry")
         {
           // j[1] is the data JSON object
-          std::cout << data <<std::endl << j << endl;
-
+          std::cout << j << endl;
+          
           if (!pf.initialized())
           {
 
@@ -139,7 +140,7 @@ int main()
           }
           cout << "highest w " << highest_weight << endl;
           cout << "average w " << weight_sum / num_particles << endl;
-
+          
           json msgJson;
           msgJson["best_particle_x"] = best_particle.x;
           msgJson["best_particle_y"] = best_particle.y;
@@ -152,6 +153,7 @@ int main()
 
           auto msg = "42[\"best_particle\"," + msgJson.dump() + "]";
           std::cout << msg << std::endl;
+          
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
         }
       }
