@@ -1,6 +1,10 @@
 import tensorflow as tf
 import numpy as np
 
+from helper.py import maybe_download_pretrained_vgg
+
+
+maybe_download_pretrained_vgg("./pretrained_weights")
 vgg_weights = np.load('./pretrained_weights/vgg16_weights.npz')
 
 
