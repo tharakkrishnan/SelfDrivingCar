@@ -5,12 +5,7 @@ import numpy as np
 
 import helper
 from loss import logistic_loss
-from model_utils import conv_layer
-from model_utils import max_pool_layer
-from model_utils import fully_collected_layer
-from model_utils import upsample_layer
-from model_utils import skip_layer_connection
-from model_utils import preprocess
+from model_utils import conv_layer, max_pool_layer, fully_connected_layer, upsample_layer, skip_layer_connection, preprocess
 
 def build_placeholders(shape):
     with tf.name_scope('data'):
