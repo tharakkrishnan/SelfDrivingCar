@@ -31,5 +31,12 @@
 * Estimate a bounding box for vehicles detected.
 
 ## 6. Extended Kalman filter
+* Use an extended Kalman filter to predict the path of a moving object  based on LIDAR and RADAR data 
 ## 7. Unscented Kalman filter
+* Use an unscented Kalman filter to predict the path of a moving object  nbased on LIDAR and RADAR data
 ## 8. Particle Filters
+* Use Particle filters to localize an object moving within a known map
+## 9. PID controller
+* Use a PID controller to control the steering of a vehicle within the lane
+## 10. Model predictive control
+* Use a Kinematic model to more accurately control the steering of the vehicle even at high speeds
