@@ -136,19 +136,18 @@ One last note here: regardless of the IDE used, every submitted project must
 still be compilable with cmake and make./
 
 # Reflection
-My path planning approach has based the method presented in the Q and A video. So in this section, I'm going to discuss how I addressed criteria given in the project specification document.
 
-### **Speed limit constraint?**
+### **Speed limit constraint**
 
 According to the project specification, the maximum allowable speed is 50 km/h. So the car is started at 0 km/h  and increase its speed by 0.224 at each time step. However, when we increase the speed, the maximum limit is  checked. If we start the car at a speed close to 50 km/h, we will experience some jerk. So starting at 0 km/h will help eliminate the issue. Following code snippet shows how speed limit constraint is implemented in C++ code.
 
 ```python
 if (too_close) {
-    ref_vel -= 0.224;
+    ref_speed -= SPEED_INCREMENT_PER_PERIOD;
     ...
 
 } else if (ref_vel < 49.5) {
-    ref_vel += 0.224;
+    ref_speed += SPEED_INCREMENT_PER_PERIOD;
     ...
 }
 ```
@@ -172,10 +171,10 @@ for (int i = 0; i < sensor_fusion.size(); i++) {
 }
 
 if (too_close) {
-    ref_vel -= 0.224;
+    ref_speed -= SPEED_INCREMENT_PER_PERIOD;
     ...
-} else if (ref_vel < 49.5) {
-    ref_vel += 0.224;
+} else if (ref_vel < MAX_SPEED) {
+    ref_speed += SPEED_INCREMENT_PER_PERIOD;
     ....
 }
 ```
@@ -225,7 +224,7 @@ Finally, if our vehicle is too close to an other vehicle, we activate our lane c
 ```python
 if (too_close) {
     ....
-     for (int i = 0; i < 3; i++) {
+     for (int i = 0; i < NUMBER_OF_LANES; i++) {
          if (candidateLane[i] && isJerkLessShift(lane, i) && (num_units_in_current_lane > 10)) {
              lane = i;
          }
@@ -233,19 +232,18 @@ if (too_close) {
     ....
 }
 ```
-Consider our car on lane 0 and there is a car in front of us. So we need to shit lane and we have identified that lane 2 is free of obstacles. However, if we instantaneously move from lane 0 to 2, our passengers will experience  bad jerk. So `isJerkLessShift()` is responsible for identifying these moves. Following code shows the complete implementation of the `isJerkLessShift()` method. 
+Consider our car on lane 0 and there is a car in front of us. So we need to shift lane and we have identified that lane 2 is free of obstacles. However, if we instantaneously move from lane 0 to 2, our passengers will experience  bad jerk. So `isSmoothShiftPossible()` is responsible for identifying these moves. Following code shows the complete implementation of the `isSmoothShiftPossible()` method. 
 
 ```python
-bool isJerkLessShift(int currentLane, int proposedLane) {
-    if (currentLane == 0 && proposedLane == 1) {
+bool isSmoothShiftPossible(int currentLane, int proposedLane)
+{
+    if (((currentLane == LEFT_LANE)||(currentLane == RIGHT_LANE)) && (proposedLane == MIDDLE_LANE))
+    {
         return true;
     }
 
-    if (currentLane == 1 && (proposedLane == 0 || proposedLane == 2)) {
-        return true;
-    }
-
-    if (currentLane == 2 && proposedLane == 1) {
+    if (currentLane == MIDDLE_LANE && ((proposedLane == LEFT_LANE) || (proposedLane == RIGHT_LANE)))
+    {
         return true;
     }
 
