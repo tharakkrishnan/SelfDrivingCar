@@ -138,9 +138,9 @@ still be compilable with cmake and make./
 # Reflection
 My path planning approach has based the method presented in the Q and A video. So in this section, I'm going to discuss how I addressed criteria given in the project specification document.
 
-### **How did I address speed limit constraint?**
+### **Speed limit constraint?**
 
-According to the project specification, the maximum allowable speed is 50 km/h. So the car is started at 0 km/h  and increase its speed by 0.224 at each time step. However, when we increase the speed, the maximum limit is also checked. If we start the car with a speed which is close to 50 km/h, we will experience some jerk. So started at 0 km/h helps to eliminate that issue as well. Following code snippt shows how speed limit constraint is implemented in C++ code.
+According to the project specification, the maximum allowable speed is 50 km/h. So the car is started at 0 km/h  and increase its speed by 0.224 at each time step. However, when we increase the speed, the maximum limit is  checked. If we start the car at a speed close to 50 km/h, we will experience some jerk. So starting at 0 km/h will help eliminate the issue. Following code snippet shows how speed limit constraint is implemented in C++ code.
 
 ```python
 if (too_close) {
@@ -153,9 +153,9 @@ if (too_close) {
 }
 ```
 
-### **How did I detect the collision and overcome it?**
+### **Collision detection**
 
-From sensor data, we calculate other vehicles' `speed`, `distance` from our vehicle and `s` coordinates. From these three information we identify vehicles which are moving close to us on the same lane. If we managed to find out one or more such vehicles we set `too_close` flag to 'true'. Finally, just after the sensor data exploration `for` lool, we reduce the speed of our vehicle if it is moving very close to other vehicle(s).
+From sensor data, we calculate other vehicles' `speed`, `distance` relative to our vehicle and their `s` coordinates. From these three information we identify vehicles which are too close to us on the same lane. If we detect such a vehicle we set `too_close` flag to 'true'. Finally, just after the sensor data exploration `for` loop, we reduce the speed of our vehicle if it is moving too close to other vehicle(s).
 
 ```python
 for (int i = 0; i < sensor_fusion.size(); i++) {
@@ -183,7 +183,7 @@ if (too_close) {
 ### **Generating smooth trajectories using Cubic Spline interpolation.**
 We used a cubic spline interpolation library for generating jerk free smooth trajectories. In this section, we describe our trajectory generation procedure.
 
-In order to generate smooth trajectories, spline library needs some data points. We use 5 points (as described below) as input to initialize spline. Then initialized spline is used for generating points for our trajectory generations.
+In order to generate smooth trajectories, spline library needs some data points. We used 5 points (as described below) as input to initialize spline. Then the initialized spline is used for generating points for our trajectory generation.
 
 Following 5 points are used to initialize spline.
 1. Last two points from the trajectory generated in the last time step.
@@ -195,7 +195,6 @@ vector<double> next_wp0 = getXY(car_s + 30,
 ```
 
 ### **Basic Lane Changing Algorithm**
-For lane changing, I developed a simple lane changing algorithm as described below.
 
 As the initial step, we initialized an array of boolean variables and which is used to keep track of candidate lane we might consider for lane changing.
 
@@ -219,9 +218,9 @@ for (int i = 0; i < sensor_fusion.size(); i++) {
 }
 ```
 
-Above `if` condition checks vehicles which are on other lanes and distnace from our vehicle to that vehicle is less than 30m, we dis-qualified that lane. Similarly, in the `else if` condition, we dis-qualified lanes which has vehicles and the distance from our vehicle to thse vehicles is less than 20m.
+Above `if` condition checks vehicles which are on other lanes and if the distance from our vehicle to that vehicle is less than 30m, we dis-qualified that lane. Similarly, in the `else if` condition, we dis-qualified lanes which has vehicles and the distance from our vehicle to these vehicles is less than 20m.
 
-Finally, if our vehicle is too close to an other vehicle, we activate our lane changing logic and if we have an qulified candidate lane we will perform a lane shifting operation.
+Finally, if our vehicle is too close to an other vehicle, we activate our lane changing logic and if we have an qualified candidate lane we will perform a lane shifting operation.
 
 ```python
 if (too_close) {
@@ -234,7 +233,7 @@ if (too_close) {
     ....
 }
 ```
-Above lane shifting logic is self-explanatory. But, it is worth to look at `isJerkLessShift(current_lane, candidate_lane)` method. Actually, lean changing will work even without `isJerkLessShift()` method. However, sometimes it will lead to jerk. For instance, consider our car on lane 0 and there is a car in front of us. So we need to shit lane and we have identified that lane 2 is free of obstacles. However, if we instantaneously move from lane 0 to 2, our passengers will experience some bad jerk. So `isJerkLessShift()` is responsible for identifying these moves. Follwong code shows the complete implementation of the `isJerkLessShift()` method. Also, it is worth to note that `(num_units_in_current_lane > 10)` is used to discourage rapid lane changing. 
+Consider our car on lane 0 and there is a car in front of us. So we need to shit lane and we have identified that lane 2 is free of obstacles. However, if we instantaneously move from lane 0 to 2, our passengers will experience  bad jerk. So `isJerkLessShift()` is responsible for identifying these moves. Following code shows the complete implementation of the `isJerkLessShift()` method. 
 
 ```python
 bool isJerkLessShift(int currentLane, int proposedLane) {
@@ -253,3 +252,5 @@ bool isJerkLessShift(int currentLane, int proposedLane) {
     return false;
 }
 ```
+
+With all this added logic our vehicle was able to change lanes and avoid collisions while staying within the speed constraint.
