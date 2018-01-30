@@ -1,5 +1,4 @@
-# UDACITY SELF-DRIVING CAR ENGINEER NANODEGREE
-# Semantic Segmentation Project (Advanced Deep Learning)
+# Semantic Segmentation Project
 
 ## Goal
 
@@ -40,10 +39,6 @@ The hyperparameters used for training are:
 
 Sample images of the output with segmentation class overlaid upon the original image in green.
 
-![sample1](./sample1.png)
-![sample2](./sample2.png)
-![sample3](./sample3.png)
-![sample4](./sample4.png)
 ![sample5](./sample5.png)
 ![sample6](./sample6.png)
 ![sample7](./sample7.png)
